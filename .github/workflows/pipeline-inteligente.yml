@@ -1,0 +1,53 @@
+name: Pipeline Inteligente
+
+on:
+  # Regra 1: execução manual via botão na interface do GitHub
+  workflow_dispatch:
+
+  # Regra 2: agendamento diário às 02:00 (UTC)
+  schedule:
+    - cron: '0 2 * * *'
+
+  # Regras 3 e 4: push apenas em branches feature/*, monitorando src/**
+  # mas ignorando alterações exclusivas dentro de src/docs/
+  push:
+    branches:
+      - 'feature/**'
+    paths:
+      - 'src/**'
+      - '!src/docs/**'
+
+jobs:
+  job_gerador:
+    name: Produtor de Artefatos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Simular build do projeto
+        run: |
+          mkdir -p saida_build
+          echo "Relatório 1 - build concluído com sucesso em $(date)" > saida_build/relatorio1.txt
+          echo "Relatório 2 - todos os testes passaram" > saida_build/relatorio2.txt
+
+      - name: Upload do artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: meus-relatorios-oficiais
+          path: saida_build/
+
+  job_auditoria:
+    name: Consumidor de Artefatos
+    runs-on: ubuntu-latest
+    needs: job_gerador
+    steps:
+      - name: Download do artefato
+        uses: actions/download-artifact@v4
+        with:
+          name: meus-relatorios-oficiais
+
+      - name: Listar arquivos e exibir relatório
+        run: |
+          ls -R
+          cat relatorio1.txt
